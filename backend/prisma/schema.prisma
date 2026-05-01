@@ -1,0 +1,65 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model PatientSession {
+  id               String     @id @default(cuid())
+  conditionId      String
+  conditionName    String?
+  answers          Json
+  summary          String?
+  severityLevel    String?
+  extractedSymptoms Json?
+  redFlags         Json?
+  status           String     @default("pending")
+  reviewedAt       DateTime?
+  reviewedBy       String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  booking          Booking?
+  susResults       SUSResult[]
+}
+
+model Booking {
+  id          String         @id @default(cuid())
+  sessionId   String         @unique
+  session     PatientSession @relation(fields: [sessionId], references: [id])
+  patientName String
+  phone       String
+  slotId      String
+  pharmacist  String
+  pharmacistId String
+  time        String
+  date        String
+  status      String         @default("pending")
+  createdAt   DateTime       @default(now())
+}
+
+model Pharmacist {
+  id         String      @id @default(cuid())
+  name       String
+  email      String      @unique
+  password   String
+  role       String      @default("pharmacist")
+  createdAt  DateTime    @default(now())
+  susResults SUSResult[]
+}
+
+model SUSResult {
+  id                 String          @id @default(cuid())
+  sessionId          String?
+  session            PatientSession? @relation(fields: [sessionId], references: [id])
+  pharmacistId       String?
+  pharmacist         Pharmacist?     @relation(fields: [pharmacistId], references: [id])
+  responses          Json
+  susScore           Float
+  interpretation     String
+  taskCompletionTime Float?
+  submittedAt        DateTime        @default(now())
+}

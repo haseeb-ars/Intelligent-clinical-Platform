@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pharmacare-db
+    environment:
+      POSTGRES_USER: pharmacare
+      POSTGRES_PASSWORD: pharmacare
+      POSTGRES_DB: pharmacare_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U pharmacare']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pharmacare-api
+    ports:
+      - '3001:3001'
+    environment:
+      - DATABASE_URL=postgresql://pharmacare:pharmacare@postgres:5432/pharmacare_db
+      - JWT_SECRET=pharmacare-docker-secret
+      - PORT=3001
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: pharmacare-web
+    ports:
+      - '5173:5173'
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
